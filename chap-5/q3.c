@@ -28,35 +28,20 @@ static void usr_sig_handler(int signum)
 
 static void greet_with_pipe()
 {
-}
-
-static void greet_with_signal()
-{
-	/* We choose how to handle a signal (which signal?) using a handler
-	 * function ... signal or sigaction()
-	 *
-	 * so...what kind of signal does the child need to send to the parent?
-	 * one of the miscellaneous signals (SIGUSR1)
-	 * how does the parent wait until receiving that signal?
-	 * the parent needs to call the signal() function and establish the
-	 * signal handler as the action for the signal from teh child.
-	 * Nothing wrong with putting my reply in the signal handler.kkkkkkkk
-	 *
-	 * We need to wait (block?) until receiving the right siganal, so
-	 * sigaction() is the deal i think
-	 */
-
-	struct sigaction usr_action;
-	sigset_t block_mask;
-	sigset_t mask;
-
 	pid_t cpid;
+	int fds[2];
 
-	/* See https://www.gnu.org/software/libc/manual/html_node/Kill-Example.html */
+	char msg[4];
 
-	/* Establish the signal handler */
-	usr_action.sa_handler = usr_sig_action;
-	
+	/* 
+	 * Key detail here is that child and parent processes all share the same
+	 * file descriptors and that the default behavior of a pipe is to block
+	 * when reading (i.e., blocks until the read from the pipe is actually
+	 * performed).
+	 */
+	if (pipe(fds) == -1) {
+		errexit(strerror(errno));
+	}
 
 	cpid = fork();
 	if (cpid < 0) {
@@ -64,32 +49,76 @@ static void greet_with_signal()
 		errexit(strerror(errno));
 	} else if (cpid == 0) {
 		/* Child process */
-		printf("Hello\n");
+		fprintf(stdout, "Hello. ");
+//		close(fds[0]);
+		write(fds[1], "Done", sizeof(msg));
+		close(fds[1]);
+	} else {
+		/* Parent process */
+//		close(fds[1]);
+		read(fds[0], &msg, sizeof(msg));
+		close(fds[0]);
+		fprintf(stdout, "Pipe message \'%s\' received. Goodbye\n", msg);
+	}
+}
+
+static void greet_with_signal()
+{
+
+	struct sigaction usr_action;
+	sigset_t block_mask;
+	sigset_t old_mask;
+
+	pid_t cpid;
+
+	/* See https://www.gnu.org/software/libc/manual/html_node/Kill-Example.html */
+
+	/*
+	 * Per man sigemptyset (3), objects of type sigset_t must be initialized
+	 * prior to being passed to functions like sigaddset() or the results
+	 * are undefined
+	 * 
+	 * First block the SIGUSR1 signal before we set up the handler
+	 */
+	sigemptyset(&block_mask);
+	sigaddset(&block_mask, SIGUSR1);
+	/* 
+	 * Key detail here is that the signal mask prior to blocking is returned
+	 * in old_mask (see man sigprocmask for more details)
+	 */
+	if (sigprocmask(SIG_BLOCK, &block_mask, &old_mask) == -1) {
+		errexit(strerror(errno));
+	}
+
+	/* Now, configure the signal handler */
+	usr_action.sa_handler = usr_sig_handler;
+	/* 
+	 * Per man sigaction (2), the signal which triggered the handler is
+	 * blocked in the handler unless the SA_NODEFER flag is used, so that
+	 * can be empty.
+	 */
+	sigemptyset(&usr_action.sa_mask);
+	usr_action.sa_flags = 0;
+	if (sigaction(SIGUSR1, &usr_action, NULL) == -1 ) {
+		errexit(strerror(errno));
+	}
+
+	cpid = fork();
+	if (cpid < 0) {
+		/* Call to fork() failed */
+		errexit(strerror(errno));
+	} else if (cpid == 0) {
+		/* Child process */
+		printf("Hello. ");
 		kill(getppid(), SIGUSR1);
 	} else {
 		/* Parent process */
-
-		/* Block only the USR1 signals */
-		sigemptyset(&block_mask);
-		if (sigaddset(&block_mask, SIGUSR1) == -1) {
-			errexit(strerror(errno));
-		}
-
 		while (!usr_sig_flag) {
-			/* 
-			 * Note that sigsuspend() restores the previous signal
-			 * mask when it returns.
-			 */
-			sigsuspend(&
+			/* Now suspend until delivery of the desired signal */
+			sigsuspend(&old_mask);
 		}
-		printf("Received signal %d. Goodbye\n", signum);
+		printf("Received signal. Goodbye\n");
 	}
-		
-
-	/*
-	 * If we're the parent, then wait until receiving a signal, then
-	 * greet, and then exit
-	 */
 }
 
 int main(int argc, char *argv[])
