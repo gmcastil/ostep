@@ -43,6 +43,21 @@ variants of exec(), including (on Linux) execl(), execle(),
 execlp(), execv(), execvp(), and execvpe(). Why do
 you think there are so many variants of the same basic call?
 
+There are a variety of ways to invoke other programs and allow a caller or user
+to have varying degrees of influence over the environment or even which program
+actually gets called.  For instance, a caller might wish to invoke the `vsim`
+executable found in the `PATH` but choose to not inherit the rest of the caller's
+environment and provide its own.  Another detail is being able to start a
+program, such as `bash` but allow it to call itself `sh` instead, to masquerade
+as the Bourne shell.
+
+There are a lot of other reasons, some a bit nefarious, where a parent might
+wish to invoke some member of the `exec()` family of functions and have a higher
+degree of control over which program is actually run, what its arguments are,
+and what its environment is. See the manpages for more details. Also, note that
+the `execvpe()` function is a GNU thing and requires the `#define _GNU_SOURCE`
+feature test macro.
+
 5. Now write a program that uses wait() to wait for the child process
 to finish in the parent. What does wait() return? What happens if
 you use wait() in the child?
