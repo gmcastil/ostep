@@ -67,4 +67,22 @@ return value when called from the parent process is the process ID of the child
 that completed. When `wait()` is called from the child process, it immediately
 returns a `pid_t` of -1.
 
-6. 
+6. Write a slight modification of the previous program, this time using
+`waitpid()` instead of `wait()`. When would `waitpid()` be useful?
+
+The `waitpid()` function would be useful if you're waiting for a specific
+process or program to complete (i.e., there might be more than one process
+that has been forked off)
+
+7. Write a program that creates a child process, and then in the child closes
+standard output. What happens if the child calls `printf()` to print some
+output after closing the descriptor?
+
+The child is unable to write to the descriptor after it has been closed. But
+what's odd to me is that the parent still can - closing the descriptor in one
+process does not seem to have an effect on the other (except to allow the child
+to write to it until it was closed).
+
+8. Write a program that creates two children, and connects the standard output
+   of one to the standard input of the other, using the `pipe()` system call.
+

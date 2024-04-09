@@ -14,19 +14,19 @@
 int main(int argc, char *argv[])
 {
 	pid_t cpid;
-	pid_t rc;
 
 	cpid = fork();
 	if (cpid < 0) {
 		errexit(strerror(errno));
 	} else if (cpid == 0) {
 		/* Child process */
-		rc = wait(NULL);
-		fprintf(stdout, "Child wait return value: %d\n", (int) rc);
+		fprintf(stdout, "Child process entered\n");
 		exit(EXIT_SUCCESS);
 	} else {
 		/* Parent process */
+		waitpid(cpid, NULL, 0);
+		fprintf(stdout, "Child process exited\n");
+		exit(EXIT_SUCCESS);
 	}
-
 }
 

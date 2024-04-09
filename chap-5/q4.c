@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 				 * Note that we can specify an environment that
 				 * defines BLOCKSIZE=512
 				 */
-				execle(cmd, cmd, "-sl", (char *) NULL, env);
+				execle(cmd, cmd, "-sl", (char *) NULL, (char *const *) env);
 
 			/* execlp() */
 			case 3:
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 
 			/* execvpe() */
 			case 6:
-				execvpe("ls", example_argv, env);
+				execvpe("ls", example_argv, (char *const *) env);
 
 			default:
 				{}
@@ -111,7 +111,11 @@ int main(int argc, char *argv[])
 	} else {
 		/* Parent process */
 		rc_wait = wait(NULL);
-		exit(EXIT_SUCCESS);
+		if (rc_wait == -1) {
+			exit(EXIT_FAILURE);
+		} else {
+			exit(EXIT_SUCCESS);
+		}
 	}
 
 	return 0;
