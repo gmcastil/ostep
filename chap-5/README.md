@@ -62,3 +62,9 @@ feature test macro.
 to finish in the parent. What does wait() return? What happens if
 you use wait() in the child?
 
+The man pages make it clear what the return values are going to be. The `wait()`
+return value when called from the parent process is the process ID of the child
+that completed. When `wait()` is called from the child process, it immediately
+returns a `pid_t` of -1.
+
+6. 
