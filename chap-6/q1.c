@@ -10,7 +10,7 @@
 
 #define	NUM_LOOPS	1E6
 
-int main(int argc, char *argv[])
+int main()
 {
 
 	int fd;

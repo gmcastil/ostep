@@ -1,8 +1,10 @@
 #include <stdlib.h>
 
-#define errexit(msg) \
+#define errexit(msg, ...) \
 	do { \
-		fprintf(stderr, "Error: %s\n", msg); \
+		fprintf(stderr, "Error: "); \
+		fprintf(stderr, msg, ##__VA_ARGS__); \
+		fprintf(stderr, "\n"); \
 		exit(EXIT_FAILURE); \
 	} while (0)
 
