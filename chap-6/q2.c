@@ -51,8 +51,46 @@ void print_results(struct meas_results *results)
 void meas_syscall_gettime(const int num_iterations, const int num_warmup)
 {
 
+	struct timeval start_time;
+	struct timeval stop_time;
+	struct timeval diff_time;
+
 	int fd;
+	int loop_cnt = 0;
+	int samples = 0;
+
 	fd = open(SAMPLE_FILE, O_CREAT | O_RDONLY, S_IRWXU);
+	if (fd == -1) {
+		errexit(strerror(errno));
+	}
+
+	/* Skip the first few of these */
+	while (loop_count < num_warmup) {
+		read(fd, NULL, 0);
+		loop_cnt++;
+	}
+
+	/* Start the timer */
+	if (gettimeofday(&start_time, NULL) == -1) {
+		errexit(strerror(errno));
+	}
+
+	/* Now we issue a truck load of system calls */
+	while (loop_cnt < num_iterations) {
+		read(fd, NULL, 0);
+		loop_cnt++;
+	}
+
+	/* Stop the timer */
+	if (gettimeofday(&stop_time, NULL) == -1) {
+		errexit(strerror(errno));
+	}
+	close(fd);
+
+	/* There are macros to diff timeval structs, see `man 3 timeradd` */
+	timersub(&start_time, &stop_time, &diff_time);
+	printf("Estimated time for system call is %f\n",
+			(float) (diff_time.tv_usec / (loop_cnt - num_warmup)));
 }
 
 void meas_syscall_intrin(const int num_iterations, const int num_warmup)
