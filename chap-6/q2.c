@@ -19,6 +19,9 @@
 /* Sample text file to open for reading 0 bytes */
 #define SAMPLE_FILE	"sample.txt"
 
+/* Reference clock frequency */
+#define CPU_MHZ		3.609604E9
+
 /* This could be passed in as an argument, but I'm running in a VM with 2 cores */
 #define NUM_CPUS	2
 /* We wish to constrain our process and its children to the last CPU */
@@ -45,6 +48,11 @@ void print_results(struct meas_results *results)
 		printf("%-15s%lld\n", "Max:", results->max);
 		printf("%-15s%lld\n", "Min:", results->min);
 		printf("%-15s%d\n", "Samples:", results->samples);
+
+		printf("%-15s%f\n", "Clock (MHz)", CPU_MHZ);
+		
+		printf("Estimated time for system call using __rdtscp() is %3.3e us\n",
+				(float) (1E6 * results->mean / CPU_MHZ));
 	}
 }
 
@@ -57,7 +65,6 @@ void meas_syscall_gettime(const int num_iterations, const int num_warmup)
 
 	int fd;
 	int loop_cnt = 0;
-	int samples = 0;
 
 	fd = open(SAMPLE_FILE, O_CREAT | O_RDONLY, S_IRWXU);
 	if (fd == -1) {
@@ -65,7 +72,7 @@ void meas_syscall_gettime(const int num_iterations, const int num_warmup)
 	}
 
 	/* Skip the first few of these */
-	while (loop_count < num_warmup) {
+	while (loop_cnt < num_warmup) {
 		read(fd, NULL, 0);
 		loop_cnt++;
 	}
@@ -88,9 +95,9 @@ void meas_syscall_gettime(const int num_iterations, const int num_warmup)
 	close(fd);
 
 	/* There are macros to diff timeval structs, see `man 3 timeradd` */
-	timersub(&start_time, &stop_time, &diff_time);
-	printf("Estimated time for system call is %f\n",
-			(float) (diff_time.tv_usec / (loop_cnt - num_warmup)));
+	timersub(&stop_time, &start_time, &diff_time);
+	printf("Estimated time for system call using gettimeofday() is %3.3e us\n",
+		(float) diff_time.tv_usec / (loop_cnt - num_warmup));
 }
 
 void meas_syscall_intrin(const int num_iterations, const int num_warmup)
