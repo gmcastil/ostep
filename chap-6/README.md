@@ -12,5 +12,3 @@ way that *lmbench* does.
    using `gettimeofday()` and `rdtsc` both methods.
 2. Write a program that measures the cost of a context switch using pipes.
 
-
-
