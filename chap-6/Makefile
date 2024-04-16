@@ -14,7 +14,7 @@ q2: q2.c
 	$(CC) $(USER_DEFINES) -Wall -Wextra -O0 -g -std=gnu11 -pedantic -m64 -I../include $< -o $@
 
 %: %.c
-	$(CC) $(CFLAGS) -I../include $< -o $@
+	$(CC) $(USER_DEFINES) $(CFLAGS) -I../include $< -o $@
 
 .PHONY: clean
 clean:
