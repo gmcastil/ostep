@@ -6,5 +6,5 @@ exe="gsh"
 command -v valgrind >/dev/null 2>&1 || \
     ( printf '%s\n' "Could not find valgrind. Check current PATH." >&2; exit 1; )
 
-valgrind --leak-check=full "${bindir}/${exe}"
+valgrind --leak-check=full --show-leak-kinds=all "${bindir}/${exe}"
 
