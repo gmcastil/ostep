@@ -1,70 +1,65 @@
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-char *prompt_str;
+/* If this is not enough stack space for temp storage you have problems */
+#define MAX_PROMPT_CWD_LEN		256		
 
-char *gsh_get_prompt()
+static char *gsh_prompt_str;
+
+char *gsh_get_prompt(void)
 {
-	static int ret;
-	static int prompt_cnt = 0;
+	int ret;
+	size_t gsh_prompt_str_size;
 
-	/* Need places to store temporary strings */
-	static char *cwd_buf = NULL;
-	static char *prompt_cnt_buf = NULL;
+	static int gsh_prompt_cnt = 0;
+	static char gsh_prompt_cwd_buf[MAX_PROMPT_CWD_LEN];
 
-	/* Length of the [xxxx] string used in the prompt */
-	static int prompt_str_len = 0;
+	int gsh_prompt_len = 0;
 
-	size_t prompt_str_len = 0;
-
-	/* Free the previously allocated string buffer */
-	if (!prompt_str) {
-		free(prompt_str);
+	/* This nay have been previously allocated, so free it to reuse the pointer */
+	if (!gsh_prompt_str) {
+		free(gsh_prompt_str);
 	}
-
-	/* Get the current working directory */
-	cwd_buf = getcwd(NULL, 0);
-	if (!cwd_buf) {
-		fprintf(stderr, "Null pointer error\n");
+	
+	if (getcwd(gsh_prompt_cwd_buf, sizeof(gsh_prompt_cwd_buf)) == NULL) {
+		fprintf(stderr, "%s\n", strerror(errno));
 		exit(1);
 	}
-	/* Start our length with the length of the current working directory */
-	prompt_str_len = strlen(cwd_buf);
-
-	/* Now add the length of additional characters */
-	prompt_cnt_len = snprintf(prompt_cnt_buf, sizeof(prompt_cnt_buf),
-			"[%d]", prompt_cnt);
-	if (prompt_cnt_len 
-	prompt_str_len += strlen("[%d]", prompt_cnt)
-
-	/* Create a prompt string containing the current working directory */
-	ret = snprintf(prompt_str, sizeof(char[PROMPT_STR_LEN]),
-			"[%d] %s$ ", prompt_cnt, cwd);
-	if (ret < 0) {
-		fprintf(stderr, "String error\n");
+	/* Now calculate the length required for the full prompt string */
+	gsh_prompt_len = snprintf(NULL, 0, "[%d] %s\n$ ", gsh_prompt_cnt, gsh_prompt_cwd_buf);
+	if (gsh_prompt_len < 0) {
+		fprintf(stderr, "%s\n", strerror(errno));
 		exit(1);
 	}
 
-	/*
-	 * Need two more entries for the trailing ' $' it contains, and a third
-	 * for the NUL character
-	 */
-	prompt_str_len += 3;
-
-	/* Per the man page, this can be freed now */
-	if (cwd) {
-		free(cwd);
+	/* Allocate and construct the final prompt string */
+	gsh_prompt_str_size = (1 + gsh_prompt_len) * sizeof(char);
+	gsh_prompt_str = malloc(gsh_prompt_str_size);
+	if (!gsh_prompt_str) {
+		fprintf(stderr, "%s\n", strerror(errno));
+		exit(1);
 	}
-	prompt_cnt++;
-	return prompt_str;
+	ret = snprintf(gsh_prompt_str, gsh_prompt_str_size,
+			"[%d] %s\n$ ", gsh_prompt_cnt, gsh_prompt_cwd_buf);
+	if (ret > (int) gsh_prompt_str_size) {
+		fprintf(stderr, "Prompt string buffer not large enough\n");
+		exit(1);
+	} else if (ret < 0) {
+		fprintf(stderr, "%s\n", strerror(errno));
+		exit(1);
+	}
+
+	gsh_prompt_cnt++;
+	return gsh_prompt_str;
 }
 
-void gsh_prompt_cleanup()
+void gsh_prompt_cleanup(void)
 {
-	if (prompt_str) {
-		free(prompt_str);
+	if (gsh_prompt_str) {
+		free(gsh_prompt_str);
 	}
 }
 
