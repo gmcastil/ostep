@@ -1,5 +1,5 @@
 CC	= gcc
-CFLAGS	= -Wall -Wextra -O0 -g -std=gnu11 -pedantic
+CFLAGS	= -Wall -Wextra -O0 -std=gnu11 -pedantic -fsanitize=address,undefined -g3
 
 all: gsh
 
