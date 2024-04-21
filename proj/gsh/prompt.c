@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "msgs.h"
+
 /* If this is not enough stack space for temp storage you have problems */
 #define MAX_PROMPT_CWD_LEN		256
 
@@ -23,31 +25,26 @@ char *gsh_get_prompt(void)
 	free(gsh_prompt_str);
 	
 	if (getcwd(gsh_prompt_cwd_buf, sizeof(gsh_prompt_cwd_buf)) == NULL) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		exit(1);
+		errexit("%s\n", strerror(errno));
 	}
 	/* Now calculate the length required for the full prompt string */
 	gsh_prompt_len = snprintf(NULL, 0, "[%d] %s\n$ ", gsh_prompt_cnt, gsh_prompt_cwd_buf);
 	if (gsh_prompt_len < 0) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		exit(1);
+		errexit("%s\n", strerror(errno));
 	}
 
 	/* Allocate and construct the final prompt string */
 	gsh_prompt_str_size = (1 + gsh_prompt_len) * sizeof(char);
 	gsh_prompt_str = malloc(gsh_prompt_str_size);
 	if (!gsh_prompt_str) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		exit(1);
+		errexit("%s\n", strerror(errno));
 	}
 	ret = snprintf(gsh_prompt_str, gsh_prompt_str_size,
 			"[%d] %s\n$ ", gsh_prompt_cnt, gsh_prompt_cwd_buf);
 	if (ret > (int) gsh_prompt_str_size) {
-		fprintf(stderr, "Prompt string buffer not large enough\n");
-		exit(1);
+		errexit("Prompt string buffer not large enough\n");
 	} else if (ret < 0) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		exit(1);
+		errexit("%s\n", strerror(errno));
 	}
 
 	gsh_prompt_cnt++;
