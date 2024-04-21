@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 /* If this is not enough stack space for temp storage you have problems */
-#define MAX_PROMPT_CWD_LEN		256		
+#define MAX_PROMPT_CWD_LEN		256
 
 static char *gsh_prompt_str;
 
@@ -20,9 +20,7 @@ char *gsh_get_prompt(void)
 	int gsh_prompt_len = 0;
 
 	/* This nay have been previously allocated, so free it to reuse the pointer */
-	if (!gsh_prompt_str) {
-		free(gsh_prompt_str);
-	}
+	free(gsh_prompt_str);
 	
 	if (getcwd(gsh_prompt_cwd_buf, sizeof(gsh_prompt_cwd_buf)) == NULL) {
 		fprintf(stderr, "%s\n", strerror(errno));
